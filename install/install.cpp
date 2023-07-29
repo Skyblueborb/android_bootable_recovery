@@ -61,6 +61,7 @@
 
 using namespace std::chrono_literals;
 
+bool ask_to_ab_reboot(Device* device);
 bool ask_to_continue_unverified(Device* device);
 bool ask_to_continue_downgrade(Device* device);
 
@@ -355,6 +356,14 @@ static InstallResult TryUpdateBinary(Package* package, bool* wipe_cache,
   bool device_only_supports_ab = device_supports_ab && !ab_device_supports_nonab;
   bool device_supports_virtual_ab = android::base::GetBoolProperty("ro.virtual_ab.enabled", false);
 
+  static bool ab_package_installed = false;
+  if (ab_package_installed) {
+    if (ask_to_ab_reboot(device)) {
+      Reboot("userrequested,recovery,ui");
+    }
+    return INSTALL_ERROR;
+  }
+
   if (package_is_ab) {
     CHECK(package->GetType() == PackageType::kFile);
   }
@@ -538,6 +547,13 @@ static InstallResult TryUpdateBinary(Package* package, bool* wipe_cache,
     return INSTALL_ERROR;
   } else {
     LOG(FATAL) << "Invalid status code " << status;
+  }
+
+  if (package_is_ab) {
+    ab_package_installed = true;
+    if (ask_to_ab_reboot(device)) {
+      Reboot("userrequested,recovery,ui");
+    }
   }
 
   return INSTALL_SUCCESS;
