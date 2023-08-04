@@ -47,6 +47,7 @@
 #include <android-base/unique_fd.h>
 
 #include "install/package.h"
+#include "bootloader_message/bootloader_message.h"
 #include "install/snapshot_utils.h"
 #include "install/verifier.h"
 #include "install/wipe_data.h"
@@ -356,10 +357,17 @@ static InstallResult TryUpdateBinary(Package* package, bool* wipe_cache,
   bool device_only_supports_ab = device_supports_ab && !ab_device_supports_nonab;
   bool device_supports_virtual_ab = android::base::GetBoolProperty("ro.virtual_ab.enabled", false);
 
+  const auto reboot_to_recovery = [] {
+    if (std::string err; !clear_bootloader_message(&err)) {
+      LOG(ERROR) << "Failed to clear BCB message: " << err;
+    }
+    Reboot("userrequested,recovery,ui");
+  };
+
   static bool ab_package_installed = false;
   if (ab_package_installed) {
     if (ask_to_ab_reboot(device)) {
-      Reboot("userrequested,recovery,ui");
+      reboot_to_recovery();
     }
     return INSTALL_ERROR;
   }
@@ -552,7 +560,7 @@ static InstallResult TryUpdateBinary(Package* package, bool* wipe_cache,
   if (package_is_ab) {
     ab_package_installed = true;
     if (ask_to_ab_reboot(device)) {
-      Reboot("userrequested,recovery,ui");
+      reboot_to_recovery();
     }
   }
 
