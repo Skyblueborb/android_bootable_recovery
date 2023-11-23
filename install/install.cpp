@@ -366,7 +366,7 @@ static InstallResult TryUpdateBinary(Package* package, bool* wipe_cache,
 
   static bool ab_package_installed = false;
   if (ab_package_installed) {
-    if (ask_to_ab_reboot(device)) {
+    if (ask_to_ab_reboot(ui->GetDevice())) {
       reboot_to_recovery();
     }
     return INSTALL_ERROR;
@@ -559,7 +559,7 @@ static InstallResult TryUpdateBinary(Package* package, bool* wipe_cache,
 
   if (package_is_ab) {
     ab_package_installed = true;
-    if (!ui->IsSideloadAutoReboot() && ask_to_ab_reboot(device)) {
+    if (!ui->IsSideloadAutoReboot() && ask_to_ab_reboot(ui->GetDevice())) {
       reboot_to_recovery();
     }
   }
